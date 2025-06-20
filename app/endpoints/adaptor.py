@@ -1,35 +1,34 @@
-import websockets
 import json
+import websockets
 import httpx
-
 from fastapi import APIRouter, Request, HTTPException
-from linebot.v3 import WebhookHandler
-from linebot.v3.messaging import Configuration
 
+from linebot.v3.messaging import Configuration
 from app.utils.logger_init import init_logger
 from app.utils import env_config as config
 
 logger = init_logger(__name__)
-
 router = APIRouter()
 
 configuration = Configuration(access_token=config.CHANNEL_ACCESS_TOKEN)
-handler = WebhookHandler(channel_secret=config.CHANNEL_SECRET)
+LINE_CONTENT_URL = "https://api-data.line.me/v2/bot/message/{message_id}/content"
+
 
 async def call_chatbot_once(user_message: str) -> str:
-    async with websockets.connect(config.CHATBOT_WS) as ws:
-        # Authen ทุกครั้งที่เชื่อมต่อใหม่
+    chatbot_ws = 'wss://' + config.CHATBOT_URL + '/ws/live-chat'
+    async with websockets.connect(chatbot_ws) as ws:
         await ws.send(config.CHATBOT_API_KEY)
         auth_response = await ws.recv()
+
+        # TODO: Check if the auth response is valid
+        logger.debug(f"Auth response: {auth_response}")
         if auth_response != "OK":
             raise Exception("WebSocket auth failed")
 
-        # ส่งข้อความผู้ใช้
         await ws.send(user_message)
-
-        # รอรับคำตอบจาก chatbot
         bot_response = await ws.recv()
         return bot_response
+
 
 async def reply_message(reply_token: str, message: str):
     url = "https://api.line.me/v2/bot/message/reply"
@@ -44,22 +43,61 @@ async def reply_message(reply_token: str, message: str):
     async with httpx.AsyncClient() as client:
         await client.post(url, headers=headers, json=body)
 
+
+async def download_audio(message_id: str) -> bytes:
+    url = LINE_CONTENT_URL.format(message_id=message_id)
+    headers = {
+        "Authorization": f"Bearer {config.CHANNEL_ACCESS_TOKEN}"
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+        if response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Cannot fetch audio")
+        return response.content
+
+
+async def speech_to_text(audio_bytes: bytes) -> str:
+    # TODO: Implement actual speech-to-text conversion here NINE
+    NotImplemented
+
+
+async def handle_audio_message(message_id: str) -> str:
+    try:
+        audio_bytes = await download_audio(message_id)
+        text = await speech_to_text(audio_bytes)
+        return text
+    except Exception as e:
+        logger.error(f"Voice message handling failed: {e}")
+        return "ขออภัย ไม่สามารถประมวลผลเสียงได้"
+
+
 @router.post("/webhook")
 async def line_webhook(request: Request):
     body = await request.body()
     data = json.loads(body)
 
     for event in data.get("events", []):
-        if event["type"] == "message" and event["message"]["type"] == "text":
-            user_message = event["message"]["text"]
-            reply_token = event["replyToken"]
+        message = event.get("message", {})
+        reply_token = event.get("replyToken")
+        message_type = message.get("type")
 
-            try:
-                bot_response = await call_chatbot_once(user_message)
-            except Exception as e:
-                print(f"Error: {e}")
-                bot_response = "ขออภัย เซิร์ฟเวอร์ตอบกลับมีปัญหา"
+        if message_type == "text":
+            user_message = message.get("text")
 
-            await reply_message(reply_token, bot_response)
+        elif message_type == "audio":
+            message_id = message.get("id")
+            user_message = await handle_audio_message(message_id)
+
+        else:
+            logger.info(f"Message type '{message_type}' not supported.")
+            continue
+
+        try:
+            bot_response = await call_chatbot_once(user_message)
+        except Exception as e:
+            logger.error(f"Chatbot error: {e}")
+            bot_response = "ขออภัย เซิร์ฟเวอร์ตอบกลับมีปัญหา"
+
+        await reply_message(reply_token, bot_response)
 
     return {"status": "ok"}
