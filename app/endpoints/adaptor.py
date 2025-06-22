@@ -2,10 +2,12 @@ import json
 import websockets
 import httpx
 from fastapi import APIRouter, Request, HTTPException
+from openai import OpenAI
 
 from linebot.v3.messaging import Configuration
 from app.utils.logger_init import init_logger
 from app.utils import env_config as config
+from app.core.service_manager import ServiceManager
 
 logger = init_logger(__name__)
 router = APIRouter()
@@ -13,6 +15,8 @@ router = APIRouter()
 configuration = Configuration(access_token=config.CHANNEL_ACCESS_TOKEN)
 LINE_CONTENT_URL = "https://api-data.line.me/v2/bot/message/{message_id}/content"
 
+openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
+service_manager = ServiceManager()
 
 async def call_chatbot_once(user_message: str) -> str:
     chatbot_ws = 'wss://' + config.CHATBOT_URL + '/ws/live-chat'
@@ -57,8 +61,17 @@ async def download_audio(message_id: str) -> bytes:
 
 
 async def speech_to_text(audio_bytes: bytes) -> str:
-    # TODO: Implement actual speech-to-text conversion here NINE
-    NotImplemented
+    """
+    Transcribe audio bytes to text using OpenAI's speech-to-text service.
+    """
+    try:
+        transcribed_text = await service_manager.call("speech2text",
+                                                      audio_file=audio_bytes,
+                                                      client=openai_client)
+        return transcribed_text
+    except Exception as e:
+        logger.error(f"Speech to text conversion failed: {e}")
+        raise e
 
 
 async def handle_audio_message(message_id: str) -> str:
