@@ -14,7 +14,7 @@ LOG_FILE = os.environ.get('LOG_FILE', None)
 SSL_KEYFILE = os.environ.get('SSL_KEYFILE', f'{INPUT_PATH}keys/self_ssl/key.pem')
 SSL_CERTFILE = os.environ.get('SSL_CERTFILE', f'{INPUT_PATH}keys/self_ssl/cert.pem')
 
-CHATBOT_URL = os.environ.get('CHATBOT_URL', 'aichatbot-agent.clicknext.com')
+CHATBOT_URL = os.environ.get('CHATBOT_URL', 'wss://aichatbot-agent.clicknext.com/chatbot/live-chat')
 CHATBOT_API_KEY = os.environ.get('CHATBOT_API_KEY', 'CN_CB_API_KEY:158f7ac1-8f18-42a5-ac68-fd16d1a604ef')
 
 CHANNEL_ACCESS_TOKEN = os.environ.get('CHANNEL_ACCESS_TOKEN', 'q5iS+Dt3PUc2MZ3HEjs7F8VA28qepXUQLzhl4boNtJirVon52Ye+UeXbJ8Ijk4Op4gZTvPkQnJzJfQwBuS7kFt6dymGYK1Buz7icZ/kyIcd16NBPU9QqleMTV9uaZE0uxIJOhqVUbOma66jvghwD9QdB04t89/1O/w1cDnyilFU=')
