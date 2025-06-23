@@ -112,10 +112,6 @@ dev:
       docker run -d --name $APP_NAME --restart always \
           -p 8089:8000 \
           -e RELEASE_VERSION="DEV" \
-          -e  OPENAI_API_KEY="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" \
-          -e CHATBOT_API_KEY="CN_CB_API_KEY:158f7ac1-8f18-42a5-ac68-fd16d1a604ef" \
-          -e CHANNEL_ACCESS_TOKEN="q5iS+Dt3PUc2MZ3HEjs7F8VA28qepXUQLzhl4boNtJirVon52Ye+UeXbJ8Ijk4Op4gZTvPkQnJzJfQwBuS7kFt6dymGYK1Buz7icZ/kyIcd16NBPU9QqleMTV9uaZE0uxIJOhqVUbOma66jvghwD9QdB04t89/1O/w1cDnyilFU="  \
-          -e CHANNEL_SECRET="8e93b4591d8b15d8f4e1de5c2be892a7" \
           -w /trd_adaptor \
           $DOCKER_REG_IMAGE-dev:$CI_COMMIT_SHORT_SHA \
           python3 main.py
