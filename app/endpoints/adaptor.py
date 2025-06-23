@@ -17,9 +17,11 @@ from linebot.v3.webhooks import (
     TextMessageContent,
     AudioMessageContent
 )
+from openai import OpenAI
 
 from app.utils.logger_init import init_logger
 from app.utils import env_config as config
+from app.core.service_manager import ServiceManager
 
 logger = init_logger(__name__)
 router = APIRouter()
@@ -27,6 +29,9 @@ router = APIRouter()
 LINE_CONTENT_URL = "https://api-data.line.me/v2/bot/message/{message_id}/content"
 configuration = Configuration(access_token=config.CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(channel_secret=config.CHANNEL_SECRET)
+
+openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
+service_manager = ServiceManager()
 
 chatbot_session = {
     "ws": None,
@@ -103,8 +108,17 @@ async def download_audio(message_id: str) -> bytes:
 
 
 async def speech_to_text(audio_bytes: bytes) -> str:
-    # TODO: Replace this mock with real speech-to-text service (e.g., Whisper)
-    return "คุณพูดอะไรบางอย่างในคลิปเสียง"
+    """
+    Transcribe audio bytes to text using OpenAI's speech-to-text service.
+    """
+    try:
+        transcribed_text = await service_manager.call("speech2text",
+                                                      audio_file=audio_bytes,
+                                                      client=openai_client)
+        return transcribed_text
+    except Exception as e:
+        logger.error(f"Speech to text conversion failed: {e}")
+        raise e
 
 
 async def handle_audio_message(message_id: str) -> str:
