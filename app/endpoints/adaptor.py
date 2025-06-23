@@ -15,8 +15,7 @@ LINE_CONTENT_URL = "https://api-data.line.me/v2/bot/message/{message_id}/content
 
 
 async def call_chatbot_once(user_message: str) -> str:
-    chatbot_ws = 'wss://' + config.CHATBOT_URL + '/ws/live-chat'
-    async with websockets.connect(chatbot_ws) as ws:
+    async with websockets.connect(config.CHATBOT_URL) as ws:
         await ws.send(config.CHATBOT_API_KEY)
         auth_response = await ws.recv()
 
