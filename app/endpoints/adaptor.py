@@ -52,7 +52,8 @@ async def get_or_create_chatbot_ws():
     ws = await websockets.connect(config.CHATBOT_URL)
     await ws.send(config.CHATBOT_API_KEY)
     auth_response = await ws.recv()
-    if auth_response != "OK":
+    auth_response_json = json.loads(auth_response)
+    if auth_response_json["success"] is not True:
         raise Exception("WebSocket auth failed")
 
     chatbot_session["ws"] = ws
