@@ -49,8 +49,7 @@ async def get_or_create_chatbot_ws():
         except:
             pass
 
-    chatbot_ws_url = 'wss://' + config.CHATBOT_URL + '/ws/live-chat'
-    ws = await websockets.connect(chatbot_ws_url)
+    ws = await websockets.connect(config.CHATBOT_URL)
     await ws.send(config.CHATBOT_API_KEY)
     auth_response = await ws.recv()
     if auth_response != "OK":
