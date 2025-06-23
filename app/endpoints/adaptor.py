@@ -115,6 +115,7 @@ async def speech_to_text(audio_bytes: bytes) -> str:
         transcribed_text = await service_manager.call("speech2text",
                                                       audio_file=audio_bytes,
                                                       client=openai_client)
+        logger.debug(f"Transcribed text: {transcribed_text}")
         return transcribed_text
     except Exception as e:
         logger.error(f"Speech to text conversion failed: {e}")
@@ -171,6 +172,7 @@ async def callback(request: Request):
 def handle_text(event: MessageEvent):
     user_message = event.message.text
     reply_token = event.reply_token
+    logger.info(f"Received message: {user_message} with reply token: {reply_token}")
     asyncio.create_task(process_message(user_message, reply_token))
 
 
@@ -178,4 +180,5 @@ def handle_text(event: MessageEvent):
 def handle_audio(event: MessageEvent):
     message_id = event.message.id
     reply_token = event.reply_token
+    logger.info(f"Received audio message with ID: {message_id} and reply token: {reply_token}")
     asyncio.create_task(process_audio_message(message_id, reply_token))
